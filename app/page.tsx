@@ -50,10 +50,6 @@ export default function Home() {
           <div className="flex items-center gap-6 pt-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              <span>No credit card required</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
               <span>Instant results</span>
             </div>
           </div>
