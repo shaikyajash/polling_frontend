@@ -16,14 +16,11 @@ export default function Home() {
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center w-full z-10">
         {/* Left Side - Hero Text */}
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
-          <Badge variant="outline" className="px-3 py-1 border-primary/20 bg-primary/5 text-primary">
-            <Rocket className="w-3 h-3 mr-2" />
-            v2.0 Now Live
-          </Badge>
+
 
           <h1 className="text-4xl sm:text-5xl lg:text-7xl font-heading font-extrabold tracking-tight text-foreground leading-[1.1]">
             Instant feedback,{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-600 animate-gradient">
+            <span className="text-transparent bg-clip-text  bg-cyan-600 ">
               effortless
             </span>{' '}
             decisions.
@@ -45,7 +42,7 @@ export default function Home() {
             <Link href="/polls">
               <Button size="lg" variant="outline" className="w-full sm:w-auto text-base gap-2 h-14 px-8 border-2 hover:bg-muted/50 transition-all hover:-translate-y-1">
                 <BarChart3 className="w-4 h-4" />
-                View Demo
+                View Polls
               </Button>
             </Link>
           </div>
@@ -89,14 +86,14 @@ export default function Home() {
                   <span>25%</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-purple-500 rounded-full animate-width" style={{ width: '25%', animationDelay: '0.2s' }}></div>
+                  <div className="h-full bg-cyan-500 rounded-full animate-width" style={{ width: '25%', animationDelay: '0.2s' }}></div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Stats Card - Floating */}
-          <Card className="absolute top-40 right-10 w-64 animate-float shadow-2xl bg-gradient-to-br from-primary to-purple-600 text-white border-0 z-10" style={{ animationDelay: '1.5s' }}>
+          <Card className="absolute top-40 right-10 w-64 animate-float shadow-2xl bg-gradient-to-br from-primary to-cyan-600 text-white border-0 z-10" style={{ animationDelay: '1.5s' }}>
             <CardContent className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <Activity className="w-6 h-6 opacity-80" />
