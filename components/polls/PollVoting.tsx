@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useOptimistic, useEffect } from 'react'
+import { useState, useTransition, useOptimistic, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { votePoll, type PollDetails } from '@/lib/poll-actions'
 import { useAuthStore } from '@/store/auth'
@@ -19,6 +19,7 @@ export default function PollVoting({ poll }: { poll: PollDetails }) {
   const user = useAuthStore((state) => state.user)
   const [isLiveMode, setIsLiveMode] = useState(false)
   const [livePollData, setLivePollData] = useState<PollDetails | null>(null)
+  const prevLiveModeRef = useRef(false)
 
   // Optimistic state for smooth UI updates
   const [optimisticPoll, setOptimisticPoll] = useOptimistic(
@@ -37,10 +38,14 @@ export default function PollVoting({ poll }: { poll: PollDetails }) {
     }
   )
 
-  // Effect to update optimistic poll when live data comes in or static poll prop changes
+  // Refresh when live mode is turned off to get latest data
   useEffect(() => {
-    // This is handled by useOptimistic's first argument, but we need to ensure local state sync
-  }, [livePollData, poll])
+    // If live mode was on and is now off, refresh to get latest data
+    if (prevLiveModeRef.current && !isLiveMode) {
+      router.refresh()
+    }
+    prevLiveModeRef.current = isLiveMode
+  }, [isLiveMode, router])
 
   useEffect(() => {
     let eventSource: EventSource | null = null;

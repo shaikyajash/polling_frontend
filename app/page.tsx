@@ -93,7 +93,7 @@ export default function Home() {
           </Card>
 
           {/* Stats Card - Floating */}
-          <Card className="absolute top-40 right-10 w-64 animate-float shadow-2xl bg-gradient-to-br from-primary to-cyan-600 text-white border-0 z-10" style={{ animationDelay: '1.5s' }}>
+          <Card className="absolute top-40 right-10 w-64 animate-float shadow-2xl bg-linear-to-br from-primary to-cyan-600 text-white border-0 z-10" style={{ animationDelay: '1.5s' }}>
             <CardContent className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <Activity className="w-6 h-6 opacity-80" />
