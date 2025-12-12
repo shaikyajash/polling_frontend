@@ -37,7 +37,7 @@ export default function Navbar() {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-2xl">🗳️</span>
+              <span className="text-2xl"><img src="/favicon.png" alt="logo" className="w-8 h-8" /></span>
               <span className="text-xl font-heading font-bold tracking-tight">Polls</span>
             </Link>
 
