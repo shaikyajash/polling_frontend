@@ -6,6 +6,9 @@ import { extractErrorMessage, handleFetchError } from './errors'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
+// Log BASE_URL for debugging production issues
+console.log('Poll Actions - Using BASE_URL:', BASE_URL)
+
 export type Poll = {
     id: string
     title: string

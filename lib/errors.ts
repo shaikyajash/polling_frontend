@@ -84,7 +84,14 @@ export function handleFetchError(error: unknown, fallbackMessage: string): never
 export function getUserFriendlyErrorMessage(error: Error & { digest?: string }): string {
     // If there's a digest, it means Next.js has obscured the error in production
     if (error.digest) {
-        console.error('Error digest:', error.digest, 'Original error:', error)
+        // Log full error details for debugging (shows in Vercel function logs)
+        console.error('Production error with digest:', {
+            digest: error.digest,
+            message: error.message,
+            name: error.name,
+            stack: error.stack,
+            fullError: error
+        })
 
         // Try to provide helpful messages based on common patterns
         if (error.message.includes('NEXT_NOT_FOUND')) {
@@ -95,8 +102,12 @@ export function getUserFriendlyErrorMessage(error: Error & { digest?: string }):
             return 'You are being redirected.'
         }
 
+        if (error.message.includes('fetch failed') || error.message.includes('ECONNREFUSED')) {
+            return 'Unable to connect to the server. Please check your internet connection or try again later.'
+        }
+
         // For other production errors, provide a generic but helpful message
-        return 'An error occurred while processing your request. Please try again or contact support if the problem persists.'
+        return `An error occurred while processing your request. ${error.digest ? `Error ID: ${error.digest}` : 'Please try again or contact support if the problem persists.'}`
     }
 
     // In development or when error hasn't been obscured, return the actual message
