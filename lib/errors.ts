@@ -57,25 +57,40 @@ export async function extractErrorMessage(response: Response): Promise<string> {
 
 /**
  * Handle fetch errors and convert them to meaningful messages
+ * Throws error with message that should survive Next.js production wrapping
  */
 export function handleFetchError(error: unknown, fallbackMessage: string): never {
+    console.error('handleFetchError called with:', { error, fallbackMessage });
+
     if (error instanceof Error) {
-        // Network errors
+        // Network errors - create explicit message
         if (error.message.includes('fetch failed') || error.message.includes('ECONNREFUSED')) {
-            throw new NetworkError('Unable to connect to the server. Please make sure the backend is running.')
+            const networkError = new Error('Unable to connect to the server. Please make sure the backend is running.');
+            // Set name to make it more identifiable
+            networkError.name = 'NetworkError';
+            console.error('Throwing NetworkError:', networkError.message);
+            throw networkError;
         }
 
         // Re-throw if it's already our custom error
         if (error instanceof ApiError || error instanceof AuthenticationError || error instanceof NetworkError) {
-            throw error
+            console.error('Re-throwing custom error:', error.message);
+            throw error;
         }
 
-        // Generic error with message
-        throw new Error(error.message)
+        // Generic error with message - create new Error to ensure message is preserved
+        const preservedError = new Error(error.message);
+        preservedError.name = error.name;
+        preservedError.stack = error.stack;
+        console.error('Throwing preserved error:', preservedError.message);
+        throw preservedError;
     }
 
-    // Unknown error type
-    throw new Error(fallbackMessage)
+    // Unknown error type - create explicit error
+    const unknownError = new Error(fallbackMessage);
+    unknownError.name = 'UnknownError';
+    console.error('Throwing unknown error:', unknownError.message);
+    throw unknownError;
 }
 
 /**

@@ -12,6 +12,9 @@ import { extractErrorMessage, handleFetchError } from './errors'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
+// Log BASE_URL for debugging production issues  
+console.log('Auth Actions - Using BASE_URL:', BASE_URL)
+
 // --- Types ---
 
 interface RegisterStartResponse {
