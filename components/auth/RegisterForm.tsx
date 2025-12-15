@@ -53,7 +53,16 @@ export default function RegisterForm() {
     setLoading(true)
 
     try {
-      const options = await registerStart(values.username)
+      const registerResult = await registerStart(values.username)
+
+      // Check if registerStart failed
+      if (!registerResult.success) {
+        setError(registerResult.error!)
+        setLoading(false)
+        return
+      }
+
+      const options = registerResult.data!
 
       if (!options.public_key_options) {
         throw new Error('No public_key_options received from server')
@@ -94,7 +103,14 @@ export default function RegisterForm() {
         clientExtensionResults: {},
       }
 
-      await registerFinish(values.username, options.registration_id, credentialJSON)
+      const finishResult = await registerFinish(values.username, options.registration_id, credentialJSON)
+
+      // Check if registerFinish failed
+      if (!finishResult.success) {
+        setError(finishResult.error!)
+        setLoading(false)
+        return
+      }
 
       router.push('/login?registered=true')
 

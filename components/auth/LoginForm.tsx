@@ -57,7 +57,16 @@ export default function LoginForm() {
     setLoading(true)
 
     try {
-      const options = await loginStart(values.username)
+      const loginResult = await loginStart(values.username)
+
+      // Check if loginStart failed
+      if (!loginResult.success) {
+        setError(loginResult.error!)
+        setLoading(false)
+        return
+      }
+
+      const options = loginResult.data!
 
       if (!options.public_key_options) {
         throw new Error('No public_key_options received from server')
@@ -96,8 +105,17 @@ export default function LoginForm() {
         clientExtensionResults: {},
       }
 
-      const user = await loginFinish(options.authentication_id, credentialJSON)
-      setUser(user)
+      const finishResult = await loginFinish(options.authentication_id, credentialJSON)
+
+      // Check if loginFinish failed
+      if (!finishResult.success) {
+        setError(finishResult.error!)
+        setLoading(false)
+        return
+      }
+
+      // Success! Set user in store
+      setUser({ id: finishResult.data!.user_id, username: finishResult.data!.user_name })
 
       router.push('/')
       router.refresh()

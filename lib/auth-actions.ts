@@ -56,15 +56,16 @@ export async function registerStart(username: string) {
 
         if (!res.ok) {
             const errorMessage = await extractErrorMessage(res)
-            throw new Error(errorMessage)
+            return { success: false, error: errorMessage, data: null }
         }
 
         const data: RegisterStartResponse = await res.json()
-        return data
+        return { success: true, data, error: null }
 
     } catch (error) {
         console.error('registerStart error:', error)
-        handleFetchError(error, 'Registration start failed')
+        const errorMessage = error instanceof Error ? error.message : 'Registration start failed'
+        return { success: false, error: errorMessage, data: null }
     }
 }
 
@@ -84,13 +85,14 @@ export async function registerFinish(username: string, registrationId: string, c
 
         if (!res.ok) {
             const errorMessage = await extractErrorMessage(res)
-            throw new Error(errorMessage)
+            return { success: false, error: errorMessage }
         }
 
-        return true
+        return { success: true, error: null }
     } catch (error) {
         console.error('registerFinish error:', error)
-        handleFetchError(error, 'Registration finish failed')
+        const errorMessage = error instanceof Error ? error.message : 'Registration finish failed'
+        return { success: false, error: errorMessage }
     }
 }
 
@@ -104,14 +106,15 @@ export async function loginStart(username: string) {
 
         if (!res.ok) {
             const errorMessage = await extractErrorMessage(res)
-            throw new Error(errorMessage)
+            return { success: false, error: errorMessage, data: null }
         }
 
         const data: AuthenticateStartResponse = await res.json()
-        return data
+        return { success: true, data, error: null }
     } catch (error) {
         console.error('loginStart error:', error)
-        handleFetchError(error, 'Login start failed')
+        const errorMessage = error instanceof Error ? error.message : 'Login start failed'
+        return { success: false, error: errorMessage, data: null }
     }
 }
 
@@ -128,7 +131,7 @@ export async function loginFinish(authenticationId: string, credential: Authenti
 
         if (!res.ok) {
             const errorMessage = await extractErrorMessage(res)
-            throw new Error(errorMessage)
+            return { success: false, error: errorMessage, data: null }
         }
 
         const data: AuthSuccessResponse = await res.json()
@@ -166,13 +169,15 @@ export async function loginFinish(authenticationId: string, credential: Authenti
 
         // Return user info to update Zustand on client
         return {
-            id: data.user_id,
-            username: data.user_name,
+            success: true,
+            data: { user_id: data.user_id, user_name: data.user_name },
+            error: null
         }
 
     } catch (error) {
         console.error('loginFinish error:', error)
-        handleFetchError(error, 'Login finish failed')
+        const errorMessage = error instanceof Error ? error.message : 'Login finish failed'
+        return { success: false, error: errorMessage, data: null }
     }
 }
 
