@@ -8,6 +8,7 @@ import type {
     RegistrationResponseJSON,
     AuthenticationResponseJSON
 } from '@simplewebauthn/types'
+import { extractErrorMessage, handleFetchError } from './errors'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
@@ -51,23 +52,16 @@ export async function registerStart(username: string) {
         })
 
         if (!res.ok) {
-            const errorText = await res.text()
-            let errorMessage = 'Registration start failed'
-            try {
-                const errorJson = JSON.parse(errorText)
-                errorMessage = errorJson.error || errorMessage
-            } catch {
-                errorMessage = errorText || errorMessage
-            }
+            const errorMessage = await extractErrorMessage(res)
             throw new Error(errorMessage)
         }
 
         const data: RegisterStartResponse = await res.json()
         return data
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('registerStart error:', error)
-        throw new Error(error.message)
+        handleFetchError(error, 'Registration start failed')
     }
 }
 
@@ -86,22 +80,14 @@ export async function registerFinish(username: string, registrationId: string, c
         })
 
         if (!res.ok) {
-            // Rust backend returns 201 Created on success
-            const errorText = await res.text()
-            let errorMessage = 'Registration finish failed'
-            try {
-                const errorJson = JSON.parse(errorText)
-                errorMessage = errorJson.error || errorMessage
-            } catch {
-                errorMessage = errorText || errorMessage
-            }
+            const errorMessage = await extractErrorMessage(res)
             throw new Error(errorMessage)
         }
 
         return true
-    } catch (error: any) {
+    } catch (error) {
         console.error('registerFinish error:', error)
-        throw new Error(error.message)
+        handleFetchError(error, 'Registration finish failed')
     }
 }
 
@@ -114,22 +100,15 @@ export async function loginStart(username: string) {
         })
 
         if (!res.ok) {
-            const errorText = await res.text()
-            let errorMessage = 'Login start failed'
-            try {
-                const errorJson = JSON.parse(errorText)
-                errorMessage = errorJson.error || errorMessage
-            } catch {
-                errorMessage = errorText || errorMessage
-            }
+            const errorMessage = await extractErrorMessage(res)
             throw new Error(errorMessage)
         }
 
         const data: AuthenticateStartResponse = await res.json()
         return data
-    } catch (error: any) {
+    } catch (error) {
         console.error('loginStart error:', error)
-        throw new Error(error.message)
+        handleFetchError(error, 'Login start failed')
     }
 }
 
@@ -145,14 +124,7 @@ export async function loginFinish(authenticationId: string, credential: Authenti
         })
 
         if (!res.ok) {
-            const errorText = await res.text()
-            let errorMessage = 'Login finish failed'
-            try {
-                const errorJson = JSON.parse(errorText)
-                errorMessage = errorJson.error || errorMessage
-            } catch {
-                errorMessage = errorText || errorMessage
-            }
+            const errorMessage = await extractErrorMessage(res)
             throw new Error(errorMessage)
         }
 
@@ -195,9 +167,9 @@ export async function loginFinish(authenticationId: string, credential: Authenti
             username: data.user_name,
         }
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('loginFinish error:', error)
-        throw new Error(error.message)
+        handleFetchError(error, 'Login finish failed')
     }
 }
 

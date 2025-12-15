@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { extractErrorMessage, handleFetchError } from './errors'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
@@ -21,7 +22,8 @@ export async function getAllPolls(filter: 'all' | 'open' | 'closed' = 'open'): P
         })
 
         if (!res.ok) {
-            throw new Error('Failed to fetch polls')
+            const errorMessage = await extractErrorMessage(res)
+            throw new Error(errorMessage)
         }
 
         const data = await res.json()
@@ -35,9 +37,9 @@ export async function getAllPolls(filter: 'all' | 'open' | 'closed' = 'open'): P
         // 'all' returns everything, so no filter needed
 
         return polls
-    } catch (error: any) {
+    } catch (error) {
         console.error('getAllPolls error:', error)
-        throw new Error(error.message || 'Failed to fetch polls')
+        handleFetchError(error, 'Failed to fetch polls')
     }
 }
 
@@ -61,37 +63,39 @@ export async function createPoll(title: string, options: string[]): Promise<Crea
         throw new Error('You must be logged in to create a poll')
     }
 
-    const res = await fetch(`${BASE_URL}/polls/new`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token.value}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ title, options }),
-    })
+    try {
+        const res = await fetch(`${BASE_URL}/polls/new`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token.value}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ title, options }),
+        })
 
-    // If token is invalid/expired, clear cookies and force re-login
-    if (res.status === 401) {
-        cookieStore.set('session_token', '', { expires: new Date(0) })
-        cookieStore.set('user_name', '', { expires: new Date(0) })
-        cookieStore.set('user_id', '', { expires: new Date(0) })
-        redirect('/login')  // This throws NEXT_REDIRECT - don't catch it!
-    }
-
-    if (!res.ok) {
-        const errorText = await res.text()
-        let errorMessage = 'Failed to create poll'
-        try {
-            const errorJson = JSON.parse(errorText)
-            errorMessage = errorJson.error || errorMessage
-        } catch {
-            errorMessage = errorText || errorMessage
+        // If token is invalid/expired, clear cookies and force re-login
+        if (res.status === 401) {
+            cookieStore.set('session_token', '', { expires: new Date(0) })
+            cookieStore.set('user_name', '', { expires: new Date(0) })
+            cookieStore.set('user_id', '', { expires: new Date(0) })
+            redirect('/login')  // This throws NEXT_REDIRECT - don't catch it!
         }
-        throw new Error(errorMessage)
-    }
 
-    const data = await res.json()
-    return data
+        if (!res.ok) {
+            const errorMessage = await extractErrorMessage(res)
+            throw new Error(errorMessage)
+        }
+
+        const data = await res.json()
+        return data
+    } catch (error) {
+        // Don't catch NEXT_REDIRECT errors
+        if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+            throw error
+        }
+        console.error('createPoll error:', error)
+        handleFetchError(error, 'Failed to create poll')
+    }
 }
 
 export type PollOption = {
@@ -135,22 +139,15 @@ export async function getPollById(pollId: string): Promise<PollDetails> {
         })
 
         if (!res.ok) {
-            const errorText = await res.text()
-            let errorMessage = 'Failed to fetch poll'
-            try {
-                const errorJson = JSON.parse(errorText)
-                errorMessage = errorJson.error || errorMessage
-            } catch {
-                errorMessage = errorText || errorMessage
-            }
+            const errorMessage = await extractErrorMessage(res)
             throw new Error(errorMessage)
         }
 
         const data = await res.json()
         return data
-    } catch (error: any) {
+    } catch (error) {
         console.error('getPollById error:', error)
-        throw new Error(error.message || 'Failed to fetch poll')
+        handleFetchError(error, 'Failed to fetch poll')
     }
 }
 
@@ -162,33 +159,35 @@ export async function votePoll(pollId: string, optionId: string): Promise<void> 
         throw new Error('You must be logged in to vote')
     }
 
-    const res = await fetch(`${BASE_URL}/polls/${pollId}/vote`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token.value}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ option_id: optionId }),
-    })
+    try {
+        const res = await fetch(`${BASE_URL}/polls/${pollId}/vote`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token.value}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ option_id: optionId }),
+        })
 
-    // If token is invalid/expired, clear cookies and force re-login
-    if (res.status === 401) {
-        cookieStore.set('session_token', '', { expires: new Date(0) })
-        cookieStore.set('user_name', '', { expires: new Date(0) })
-        cookieStore.set('user_id', '', { expires: new Date(0) })
-        redirect('/login')  // This throws NEXT_REDIRECT - don't catch it!
-    }
-
-    if (!res.ok) {
-        const errorText = await res.text()
-        let errorMessage = 'Failed to cast vote'
-        try {
-            const errorJson = JSON.parse(errorText)
-            errorMessage = errorJson.error || errorMessage
-        } catch {
-            errorMessage = errorText || errorMessage
+        // If token is invalid/expired, clear cookies and force re-login
+        if (res.status === 401) {
+            cookieStore.set('session_token', '', { expires: new Date(0) })
+            cookieStore.set('user_name', '', { expires: new Date(0) })
+            cookieStore.set('user_id', '', { expires: new Date(0) })
+            redirect('/login')  // This throws NEXT_REDIRECT - don't catch it!
         }
-        throw new Error(errorMessage)
+
+        if (!res.ok) {
+            const errorMessage = await extractErrorMessage(res)
+            throw new Error(errorMessage)
+        }
+    } catch (error) {
+        // Don't catch NEXT_REDIRECT errors
+        if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+            throw error
+        }
+        console.error('votePoll error:', error)
+        handleFetchError(error, 'Failed to cast vote')
     }
 }
 
@@ -233,7 +232,8 @@ export async function getUserPolls(filter: 'all' | 'open' | 'closed' = 'open'): 
         }
 
         if (!res.ok) {
-            throw new Error('Failed to fetch user polls')
+            const errorMessage = await extractErrorMessage(res)
+            throw new Error(errorMessage)
         }
 
         const data: GetUserPollsResponse = await res.json()
@@ -248,9 +248,9 @@ export async function getUserPolls(filter: 'all' | 'open' | 'closed' = 'open'): 
         // 'all' returns everything, so no filter needed
 
         return polls
-    } catch (error: any) {
+    } catch (error) {
         console.error('getUserPolls error:', error)
-        throw new Error(error.message || 'Failed to fetch user polls')
+        handleFetchError(error, 'Failed to fetch user polls')
     }
 }
 
@@ -262,31 +262,72 @@ export async function closePoll(pollId: string): Promise<void> {
         throw new Error('You must be logged in to close a poll')
     }
 
-    const res = await fetch(`${BASE_URL}/polls/${pollId}/close`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token.value}`,
-            'Content-Type': 'application/json',
-        },
-    })
+    try {
+        const res = await fetch(`${BASE_URL}/polls/${pollId}/close`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token.value}`,
+                'Content-Type': 'application/json',
+            },
+        })
 
-    // If token is invalid/expired, clear cookies and force re-login
-    if (res.status === 401) {
-        cookieStore.set('session_token', '', { expires: new Date(0) })
-        cookieStore.set('user_name', '', { expires: new Date(0) })
-        cookieStore.set('user_id', '', { expires: new Date(0) })
-        redirect('/login')  // This throws NEXT_REDIRECT - don't catch it!
+        // If token is invalid/expired, clear cookies and force re-login
+        if (res.status === 401) {
+            cookieStore.set('session_token', '', { expires: new Date(0) })
+            cookieStore.set('user_name', '', { expires: new Date(0) })
+            cookieStore.set('user_id', '', { expires: new Date(0) })
+            redirect('/login')  // This throws NEXT_REDIRECT - don't catch it!
+        }
+
+        if (!res.ok) {
+            const errorMessage = await extractErrorMessage(res)
+            throw new Error(errorMessage)
+        }
+    } catch (error) {
+        // Don't catch NEXT_REDIRECT errors
+        if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+            throw error
+        }
+        console.error('closePoll error:', error)
+        handleFetchError(error, 'Failed to close poll')
+    }
+}
+
+export async function resetPoll(pollId: string): Promise<void> {
+    const cookieStore = await cookies()
+    const token = cookieStore.get('session_token')
+
+    if (!token) {
+        throw new Error('You must be logged in to reset a poll')
     }
 
-    if (!res.ok) {
-        const errorText = await res.text()
-        let errorMessage = 'Failed to close poll'
-        try {
-            const errorJson = JSON.parse(errorText)
-            errorMessage = errorJson.error || errorMessage
-        } catch {
-            errorMessage = errorText || errorMessage
+    try {
+        const res = await fetch(`${BASE_URL}/polls/${pollId}/reset`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token.value}`,
+                'Content-Type': 'application/json',
+            },
+        })
+
+        // If token is invalid/expired, clear cookies and force re-login
+        if (res.status === 401) {
+            cookieStore.set('session_token', '', { expires: new Date(0) })
+            cookieStore.set('user_name', '', { expires: new Date(0) })
+            cookieStore.set('user_id', '', { expires: new Date(0) })
+            redirect('/login')  // This throws NEXT_REDIRECT - don't catch it!
         }
-        throw new Error(errorMessage)
+
+        if (!res.ok) {
+            const errorMessage = await extractErrorMessage(res)
+            throw new Error(errorMessage)
+        }
+    } catch (error) {
+        // Don't catch NEXT_REDIRECT errors
+        if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+            throw error
+        }
+        console.error('resetPoll error:', error)
+        handleFetchError(error, 'Failed to reset poll')
     }
 }

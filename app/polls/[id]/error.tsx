@@ -1,5 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
+import { getUserFriendlyErrorMessage } from '@/lib/errors'
+
 export default function PollDetailsError({
   error,
   reset
@@ -7,6 +10,13 @@ export default function PollDetailsError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  useEffect(() => {
+    // Log error for debugging
+    console.error('Poll details error:', error)
+  }, [error])
+
+  const errorMessage = getUserFriendlyErrorMessage(error)
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <div className="text-center py-12 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
@@ -27,10 +37,13 @@ export default function PollDetailsError({
           Failed to Load Poll
         </h3>
         <p className="mt-2 text-sm text-red-700 dark:text-red-300 max-w-md mx-auto">
-          {error.message.includes('fetch failed') || error.message.includes('ECONNREFUSED')
-            ? 'Unable to connect to the server. Please make sure the backend is running.'
-            : error.message}
+          {errorMessage}
         </p>
+        {error.digest && (
+          <p className="mt-2 text-xs text-red-600 dark:text-red-400 font-mono">
+            Error ID: {error.digest}
+          </p>
+        )}
         <div className="mt-6 flex gap-3 justify-center">
           <button
             onClick={reset}

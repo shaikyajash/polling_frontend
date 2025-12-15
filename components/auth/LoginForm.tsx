@@ -104,7 +104,17 @@ export default function LoginForm() {
 
     } catch (error: any) {
       console.error('Login failed:', error)
-      setError(error.message || 'Authentication failed. Please try again.')
+
+      // Handle WebAuthn-specific errors
+      if (error.name === 'NotAllowedError') {
+        setError('Authentication was cancelled. Please try again when ready.')
+      } else if (error.message?.includes('timed out') || error.message?.includes('not allowed')) {
+        setError('Authentication was cancelled or timed out. Please try again.')
+      } else if (error.message?.includes('Authentication was cancelled')) {
+        setError('Authentication was cancelled. Please try again when ready.')
+      } else {
+        setError(error.message || 'Authentication failed. Please try again.')
+      }
     } finally {
       setLoading(false)
     }

@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 
 export default function PollVoting({ poll }: { poll: PollDetails }) {
+
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
   const user = useAuthStore((state) => state.user)
@@ -47,10 +48,15 @@ export default function PollVoting({ poll }: { poll: PollDetails }) {
     prevLiveModeRef.current = isLiveMode
   }, [isLiveMode, router])
 
+
+
+
   useEffect(() => {
+
     let eventSource: EventSource | null = null;
 
     if (isLiveMode && !optimisticPoll.is_closed) {
+
       const sseUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/polls/${poll.id}/results`;
       console.log('Connecting to SSE:', sseUrl);
 
@@ -63,38 +69,44 @@ export default function PollVoting({ poll }: { poll: PollDetails }) {
 
       eventSource.onmessage = (event) => {
         try {
-          // The backend sends "data: {...}" so event.data should contain the JSON string
-          // If the backend sends specifically formatted data like "data: { ... }" we might need to parse carefully
-          // Standard SSE event.data is just the payload string
           console.log('SSE Message:', event.data);
 
           const data = JSON.parse(event.data);
 
-          // Map the incoming data to our PollDetails structure if needed
-          // The example data matches mostly, but let's be safe
+          // IMPORTANT: If user just voted (pending state), don't update immediately
+          // This prevents the flash when optimistic update is still settling
+          // We'll get the update after the vote completes via router.refresh()
+
+          // Detect if poll has been reset (all votes = 0)
+          const isPollReset = data.total_votes === 0 && data.options.every((opt: any) => opt.vote_count === 0);
+
+          // Build the updated poll data
           const updatedPoll: PollDetails = {
-            ...poll, // Keep existing fields like description if missing in SSE
-            ...data, // Overwrite with new data
-            // Ensure options map correctly if structure differs, but it looks identical
+            ...poll,
+            ...data,
             options: data.options.map((opt: any) => ({
               ...opt,
-              // If backend sends 'percentage' we can use it, or recalculate
-              // We rely on vote_count mostly
             })),
-            // Preserve user_voted_option_id from initial state or optimistic state if strictly needed,
-            // but usually SSE won't tell us *our* vote, so we keep what we know or relies on re-fetch.
-            // Actually, for simplicity, we assume SSE gives global counts.
-            // We should preserve the user's vote status from the initial prop/state if SSE doesn't send it.
-            user_voted_option_id: optimisticPoll.user_voted_option_id
+            // If poll was reset, clear user's vote. Otherwise preserve it from optimistic state
+            // The server doesn't send back user_voted_option_id in SSE, only counts
+            user_voted_option_id: isPollReset
+              ? null
+              : (optimisticPoll.user_voted_option_id || data.user_voted_option_id)
           };
 
+          // Only update if poll is not closed
           setLivePollData(updatedPoll);
 
-          // If the poll is closed, turn off live mode to stop the connection loop
+          // If the poll is closed, turn off live mode
           if (updatedPoll.is_closed) {
             setIsLiveMode(false);
             toast.info('Poll has been closed');
-            router.refresh(); // Refresh to ensure server state is synced
+            router.refresh();
+          }
+
+          // If poll was reset, notify user
+          if (isPollReset && optimisticPoll.user_voted_option_id) {
+            toast.info('Poll has been reset by the owner');
           }
         } catch (error) {
           console.error('Error parsing SSE data:', error);
@@ -143,13 +155,14 @@ export default function PollVoting({ poll }: { poll: PollDetails }) {
       try {
         await votePoll(poll.id, optionId)
         toast.success('Vote recorded!')
-        // If in live mode, we expect SSE to update, but refresh is safe fallback
-        if (!isLiveMode) {
-          router.refresh()
-        }
+        // Always refresh after voting to get the latest server state
+        // This ensures our client state matches server even in live mode
+        router.refresh()
       } catch (err: any) {
         console.error(err)
         toast.error(err.message || 'Failed to vote')
+        // On error, also refresh to reset state
+        router.refresh()
       }
     })
   }

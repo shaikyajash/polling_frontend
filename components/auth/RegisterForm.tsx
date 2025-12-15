@@ -100,7 +100,17 @@ export default function RegisterForm() {
 
     } catch (error: any) {
       console.error('Registration failed:', error)
-      setError(error.message || 'Registration failed. Please try again.')
+
+      // Handle WebAuthn-specific errors
+      if (error.name === 'NotAllowedError') {
+        setError('Passkey creation was cancelled. Please try again when ready.')
+      } else if (error.message?.includes('timed out') || error.message?.includes('not allowed')) {
+        setError('Passkey creation was cancelled or timed out. Please try again.')
+      } else if (error.message?.includes('Passkey creation was cancelled')) {
+        setError('Passkey creation was cancelled. Please try again when ready.')
+      } else {
+        setError(error.message || 'Registration failed. Please try again.')
+      }
     } finally {
       setLoading(false)
     }

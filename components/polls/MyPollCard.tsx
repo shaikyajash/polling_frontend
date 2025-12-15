@@ -3,8 +3,8 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
-import { Calendar, Users, XCircle, CheckCircle } from 'lucide-react'
-import { closePoll, type UserPoll } from '@/lib/poll-actions'
+import { Calendar, Users, XCircle, CheckCircle, RotateCcw } from 'lucide-react'
+import { closePoll, resetPoll, type UserPoll } from '@/lib/poll-actions'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,7 @@ export default function MyPollCard({ poll }: MyPollCardProps) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const [showConfirm, setShowConfirm] = useState(false)
+    const [showResetConfirm, setShowResetConfirm] = useState(false)
 
     const handleClosePoll = () => {
         startTransition(async () => {
@@ -31,6 +32,19 @@ export default function MyPollCard({ poll }: MyPollCardProps) {
             }
         })
         setShowConfirm(false)
+    }
+
+    const handleResetPoll = () => {
+        startTransition(async () => {
+            try {
+                await resetPoll(poll.id)
+                toast.success('Poll reset successfully! All votes have been cleared.')
+                router.refresh()
+            } catch (error: any) {
+                toast.error(error.message || 'Failed to reset poll')
+            }
+        })
+        setShowResetConfirm(false)
     }
 
     return (
@@ -74,35 +88,68 @@ export default function MyPollCard({ poll }: MyPollCardProps) {
                     <Link href={`/polls/${poll.id}`}>View Results</Link>
                 </Button>
                 {!poll.is_closed && (
-                    showConfirm ? (
-                        <>
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={handleClosePoll}
-                                disabled={isPending}
-                            >
-                                {isPending ? 'Closing...' : 'Confirm'}
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setShowConfirm(false)}
-                                disabled={isPending}
-                            >
-                                Cancel
-                            </Button>
-                        </>
-                    ) : (
-                        <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => setShowConfirm(true)}
-                        >
-                            <XCircle className="h-4 w-4 mr-1" />
-                            Close Poll
-                        </Button>
-                    )
+                    <>
+                        {showResetConfirm ? (
+                            <>
+                                <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={handleResetPoll}
+                                    disabled={isPending}
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                    {isPending ? 'Resetting...' : 'Confirm Reset'}
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowResetConfirm(false)}
+                                    disabled={isPending}
+                                >
+                                    Cancel
+                                </Button>
+                            </>
+                        ) : showConfirm ? (
+                            <>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={handleClosePoll}
+                                    disabled={isPending}
+                                >
+                                    {isPending ? 'Closing...' : 'Confirm Close'}
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowConfirm(false)}
+                                    disabled={isPending}
+                                >
+                                    Cancel
+                                </Button>
+                            </>
+                        ) : (
+                            <>
+                                <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => setShowResetConfirm(true)}
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                    <RotateCcw className="h-4 w-4 mr-1" />
+                                    Reset
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => setShowConfirm(true)}
+                                >
+                                    <XCircle className="h-4 w-4 mr-1" />
+                                    Close
+                                </Button>
+                            </>
+                        )}
+                    </>
                 )}
             </CardFooter>
         </Card>
